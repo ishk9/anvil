@@ -35,6 +35,18 @@ State is keyed by `session_id`, so one client conversation maps to one session.
    docker compose build
    ```
 
+   Or pull a published image instead of building locally — tagged releases are
+   pushed to GHCR:
+
+   ```bash
+   docker pull ghcr.io/ishk9/anvil:latest   # or a specific tag, e.g. :v0.1.0
+   docker tag ghcr.io/ishk9/anvil:latest anvil:latest
+   ```
+
+   The client config below references `anvil:latest`; the `docker tag` step lets a
+   pulled image satisfy it without changing the config. Alternatively, use the full
+   `ghcr.io/ishk9/anvil:<tag>` reference directly in the client `args`.
+
 2. Register the server with your client. It's launched via `docker run -i` over stdio.
 
 ### Cursor (`~/.cursor/mcp.json`)

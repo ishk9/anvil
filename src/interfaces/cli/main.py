@@ -126,6 +126,42 @@ def viewer(
     uvicorn.run(app_instance, host=host, port=port)
 
 
+@app.command()
+def webui(
+    host: str = typer.Option("0.0.0.0", help="Bind host."),
+    port: int = typer.Option(8000, help="Bind port."),
+) -> None:
+    """Run the Web UI — drive design sessions from the browser (no MCP client needed)."""
+    import uvicorn
+
+    from interfaces.webui.app import create_webui_app
+
+    settings = get_settings()
+    configure_logging(level=settings.log_level, json_output=settings.log_json)
+
+    if not settings.active_api_key():
+        console.print(
+            Panel(
+                f"No API key set for vendor '{settings.llm_vendor.value}'. Set "
+                f"[cyan]MECHFORGE_ANTHROPIC_API_KEY[/cyan] or "
+                f"[cyan]MECHFORGE_OPENAI_API_KEY[/cyan].",
+                title="missing configuration",
+                border_style="red",
+            )
+        )
+        raise typer.Exit(code=1)
+
+    container = Container()
+    app_instance = create_webui_app(
+        container.coordinator(),
+        settings.workspace_dir,
+        viewer_url=settings.viewer_url,
+    )
+    console.print("\n[bold]Anvil Web UI[/bold]  ready")
+    console.print(f"  Local:   http://localhost:{port}/\n")
+    uvicorn.run(app_instance, host=host, port=port)
+
+
 def _print_spec(handle) -> None:  # type: ignore[no-untyped-def]
     spec = handle.session.spec
     if spec is None:

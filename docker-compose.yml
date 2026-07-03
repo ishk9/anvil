@@ -44,6 +44,20 @@ services:
       - ./data:/data
     command: ["anvil", "viewer", "--host", "0.0.0.0", "--port", "8000"]
 
+  # Web UI: `docker compose up webui` then open http://localhost:8092
+  # Drives design sessions from the browser (reuses the embedded agent + live viewer).
+  webui:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: anvil:latest
+    env_file: .env
+    ports:
+      - "8092:8000"
+    volumes:
+      - ./data:/data
+    command: ["anvil", "webui", "--host", "0.0.0.0", "--port", "8000"]
+
   # HTTP API: `docker compose up api`
   api:
     build:

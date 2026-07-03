@@ -60,4 +60,7 @@ class MassPropertiesValidator:
                     "Mesh is not watertight; mass figures are approximate and it may not slice.",
                 )
             )
-        return ValidationReport(issues=tuple(issues))
+        return ValidationReport(
+            issues=tuple(issues),
+            metrics={"mass.mass_g": mass_g, "mass.volume_mm3": volume_mm3},
+        )

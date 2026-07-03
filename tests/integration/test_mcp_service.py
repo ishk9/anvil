@@ -6,11 +6,18 @@ from pathlib import Path
 
 import pytest
 
+from application.assembly_toolkit import AssemblyToolkit
+from application.catalog_service import CatalogService
 from application.design_toolkit import DesignToolkit
+from application.revision_service import RevisionService
 from config.settings import Settings
 from infrastructure.cad.build123d_executor import Build123dExecutor
 from infrastructure.persistence.filesystem_artifact_repository import (
     FilesystemArtifactRepository,
+)
+from infrastructure.persistence.filesystem_design_catalog import FilesystemDesignCatalog
+from infrastructure.persistence.filesystem_history_repository import (
+    FilesystemHistoryRepository,
 )
 from infrastructure.rendering.matplotlib_renderer import MatplotlibRenderer
 from infrastructure.validation.composite_validator import CompositeValidator
@@ -40,7 +47,14 @@ def _service(tmp_path: Path) -> McpDesignService:
         repository=FilesystemArtifactRepository(workspace_dir=tmp_path),
         settings=Settings(render_views=2),
     )
-    return McpDesignService(toolkit=toolkit)
+    history = FilesystemHistoryRepository(workspace_dir=tmp_path)
+    catalog = FilesystemDesignCatalog(workspace_dir=tmp_path)
+    return McpDesignService(
+        toolkit=toolkit,
+        revisions=RevisionService(history=history),
+        catalog=CatalogService(catalog=catalog),
+        assemblies=AssemblyToolkit(toolkit=toolkit),
+    )
 
 
 def test_build_validate_export_flow(tmp_path: Path) -> None:

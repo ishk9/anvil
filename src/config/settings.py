@@ -64,6 +64,31 @@ class Settings(BaseSettings):
     build_volume_z_mm: float = 250.0
     min_wall_thickness_mm: float = 0.8
 
+    # --- FEA (CalculiX + gmsh; degrades gracefully when the stack is absent) ---
+    fea_solver_cmd: str = "ccx"
+    """CalculiX executable name/path. Missing binary -> FEA reports a warning, never fails."""
+    fea_mesh_size_mm: float = 2.0
+    fea_warn_safety_factor: float = 2.0
+    fea_timeout_seconds: int = 600
+
+    # --- Slicer-backed cost/printability (PrusaSlicer/CuraEngine; geometric fallback) ---
+    slicer_cmd: str = "prusa-slicer"
+    slicer_config_path: Path | None = None
+    machine_rate_usd_per_hour: float = 3.0
+    slicer_timeout_seconds: int = 120
+
+    # --- Drone balance ---
+    drone_com_tolerance_mm: float = 2.0
+    """Max CoM offset from the geometric centre in the XY plane before the airframe is
+    flagged as imbalanced (flight controllers trim against XY drift in level flight)."""
+
+    # --- Build cache + observability ---
+    build_cache_enabled: bool = True
+    """Hash generated code+params and skip re-executing identical builds."""
+    metrics_backend: str = "structlog"
+    """One of: null, structlog, prometheus (prometheus falls back to structlog if the
+    client library is not installed)."""
+
     # --- Storage ---
     workspace_dir: Path = Path("/data/workspace")
     """Root for all generated artifacts (mounted volume in Docker)."""

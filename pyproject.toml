@@ -36,6 +36,15 @@ dev = [
     "ruff>=0.6",
     "mypy>=1.11",
 ]
+# Real FEA: gmsh meshes the STEP; the CalculiX `ccx` solver is an OS binary (see Docker).
+# Absent gmsh/ccx degrades to an informative warning rather than failing validation.
+fea = [
+    "gmsh>=4.12",
+]
+# Prometheus metrics export; without it the app uses the structlog sink.
+metrics = [
+    "prometheus-client>=0.20",
+]
 
 [project.scripts]
 anvil = "interfaces.cli.main:app"

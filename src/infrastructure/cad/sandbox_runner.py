@@ -66,6 +66,10 @@ def _run(request: dict[str, Any]) -> dict[str, Any]:
     namespace: dict[str, Any] = {"__name__": "__anvil_sandbox__"}
     namespace.update({name: getattr(b3d, name) for name in dir(b3d) if not name.startswith("_")})
 
+    # Parametric revisions: expose overridable dimensions the code may read, e.g.
+    #   w = params.get("arm_width_mm", 8.0)
+    namespace["params"] = dict(request.get("params", {}))
+
     # --- execute model code ---
     try:
         exec(compile(code, "<generated_cad>", "exec"), namespace)

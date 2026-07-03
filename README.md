@@ -27,7 +27,8 @@ It also ships two standalone interfaces that share the same core: an embedded-ag
 LLMs can't sculpt geometry, but they're excellent at writing code. So the agent emits
 [`build123d`](https://build123d.readthedocs.io) Python, which is executed in an isolated
 sandbox to produce true B-rep solids. See [`docs/00-OVERVIEW.md`](docs/00-OVERVIEW.md) and
-[`docs/01-ARCHITECTURE.md`](docs/01-ARCHITECTURE.md).
+[`docs/01-ARCHITECTURE.md`](docs/01-ARCHITECTURE.md). What's planned next is in
+[`docs/03-ROADMAP.md`](docs/03-ROADMAP.md).
 
 ```
 discuss physics ─► generate CAD code ─► execute (sandbox) ─► render + vision critique

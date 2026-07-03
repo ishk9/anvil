@@ -12,31 +12,93 @@
         --ink: #e7e9ee;
         --dim: #8b909a;
         --accent: #6ea8fe;
+        --info: #6ea8fe;
+        --warn: #f5b955;
+        --error: #f87171;
+        --ok: #4ade80;
       }
       * { box-sizing: border-box; }
       html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
         font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; overflow: hidden; }
       #app { position: fixed; inset: 0; }
-      #hud { position: fixed; top: 14px; left: 14px; background: rgba(22,24,29,0.82);
-        border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px;
-        backdrop-filter: blur(8px); min-width: 210px; }
+      .card { background: rgba(22,24,29,0.86); border: 1px solid var(--line);
+        border-radius: 10px; backdrop-filter: blur(8px); }
+      #hud { position: fixed; top: 14px; left: 14px; padding: 12px 14px;
+        min-width: 232px; max-height: calc(100vh - 28px); overflow-y: auto; }
       #hud h1 { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
         margin: 0 0 8px; color: var(--dim); font-weight: 600; }
       .row { display: flex; justify-content: space-between; gap: 18px; padding: 2px 0; }
       .row span:first-child { color: var(--dim); }
-      .row span:last-child { color: var(--ink); }
+      .row span:last-child { color: var(--ink); text-align: right; }
+      .sep { margin-top: 8px; border-top: 1px solid var(--line); padding-top: 8px; }
+      label.field { display: flex; justify-content: space-between; align-items: center;
+        gap: 10px; padding: 2px 0; color: var(--dim); }
+      select, input[type="range"] { background: var(--panel); color: var(--ink);
+        border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; font: inherit; }
       #status { position: fixed; bottom: 14px; left: 14px; display: flex; align-items: center;
-        gap: 8px; color: var(--dim); background: rgba(22,24,29,0.82);
-        border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; }
+        gap: 8px; color: var(--dim); border-radius: 999px; padding: 6px 12px; }
       #dot { width: 8px; height: 8px; border-radius: 50%; background: #3a3f48; }
-      #dot.live { background: #4ade80; }
+      #dot.live { background: var(--ok); }
       #dot.flash { background: var(--accent); }
-      #controls { position: fixed; top: 14px; right: 14px; display: flex; gap: 8px; }
+      #controls { position: fixed; top: 14px; right: 14px; display: flex; flex-wrap: wrap;
+        justify-content: flex-end; gap: 8px; max-width: 42vw; }
       button { background: var(--panel); color: var(--ink); border: 1px solid var(--line);
         border-radius: 8px; padding: 7px 12px; cursor: pointer; font: inherit; }
       button:hover { border-color: var(--accent); color: var(--accent); }
+      button.on { border-color: var(--accent); color: var(--accent); }
       #empty { position: fixed; inset: 0; display: flex; align-items: center;
         justify-content: center; color: var(--dim); text-align: center; padding: 24px; }
+      /* Collapsible validation panel, bottom-right. */
+      #validation { position: fixed; right: 14px; bottom: 14px; width: 340px;
+        max-height: 46vh; display: flex; flex-direction: column; }
+      #validation .head { display: flex; justify-content: space-between; align-items: center;
+        padding: 10px 12px; cursor: pointer; }
+      #validation .head h2 { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase;
+        margin: 0; color: var(--dim); font-weight: 600; }
+      #validation .body { overflow-y: auto; padding: 0 12px 10px; }
+      #validation.collapsed .body { display: none; }
+      .issue { display: flex; gap: 8px; padding: 4px 0; border-top: 1px solid var(--line);
+        align-items: baseline; }
+      .issue .sev { flex: 0 0 auto; width: 8px; height: 8px; border-radius: 50%;
+        margin-top: 5px; }
+      .issue .sev.INFO { background: var(--info); }
+      .issue .sev.WARNING { background: var(--warn); }
+      .issue .sev.ERROR { background: var(--error); }
+      .issue .check { color: var(--dim); }
+      .issue .msg { color: var(--ink); }
+      .pill { border-radius: 999px; padding: 1px 8px; font-size: 11px; }
+      .pill.pass { background: rgba(74,222,128,0.15); color: var(--ok); }
+      .pill.fail { background: rgba(248,113,113,0.15); color: var(--error); }
+      .metrics { display: grid; grid-template-columns: 1fr auto; gap: 1px 12px;
+        margin-top: 8px; color: var(--dim); }
+      .metrics b { color: var(--ink); font-weight: 500; }
+      /* Dimension + measurement labels rendered in-scene as HTML overlays. */
+      .tag { position: fixed; transform: translate(-50%, -50%); pointer-events: none;
+        background: rgba(14,15,18,0.85); border: 1px solid var(--line); border-radius: 6px;
+        padding: 1px 6px; color: var(--accent); white-space: nowrap; font-size: 11px; }
+      .tag.dim { color: var(--dim); }
+      /* Gallery / versions drawer. */
+      #drawer { position: fixed; inset: 0; background: rgba(8,9,11,0.72); display: none;
+        align-items: center; justify-content: center; z-index: 20; }
+      #drawer.open { display: flex; }
+      #drawer .inner { width: min(880px, 92vw); max-height: 84vh; overflow-y: auto;
+        padding: 18px; }
+      #drawer h2 { margin: 0 0 12px; font-size: 13px; letter-spacing: 0.08em;
+        text-transform: uppercase; color: var(--dim); }
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 12px; }
+      .tile { border: 1px solid var(--line); border-radius: 8px; overflow: hidden;
+        cursor: pointer; background: var(--panel); }
+      .tile:hover { border-color: var(--accent); }
+      .tile img { width: 100%; height: 120px; object-fit: cover; display: block;
+        background: #0b0c0e; }
+      .tile .noimg { height: 120px; display: flex; align-items: center;
+        justify-content: center; color: var(--dim); }
+      .tile .meta { padding: 6px 8px; }
+      .tile .meta .t { color: var(--ink); overflow: hidden; text-overflow: ellipsis;
+        white-space: nowrap; }
+      .tile .meta .s { color: var(--dim); font-size: 11px; }
+      .close { float: right; }
     </style>
     <script type="importmap">
       {
@@ -49,25 +111,76 @@
   </head>
   <body>
     <div id="app"></div>
-    <div id="hud">
+
+    <div id="hud" class="card">
       <h1>Anvil · Live</h1>
       <div class="row"><span>model</span><span id="m-name">—</span></div>
       <div class="row"><span>triangles</span><span id="m-tris">—</span></div>
       <div class="row"><span>size (mm)</span><span id="m-dims">—</span></div>
+      <div class="row"><span>volume</span><span id="m-vol">—</span></div>
+      <div class="row"><span>mass</span><span id="m-mass">—</span></div>
+      <div class="row"><span>watertight</span><span id="m-water">—</span></div>
       <div class="row"><span>updated</span><span id="m-time">—</span></div>
-      <div class="row" style="margin-top:8px;border-top:1px solid var(--line);padding-top:8px">
-        <span>keys</span><span style="color:var(--dim)">+ / −  ·  ↑↓←→  ·  R  W  Space</span>
+      <label class="field sep">material
+        <select id="sel-material">
+          <option value="petg">PETG</option>
+          <option value="pla">PLA</option>
+          <option value="abs">ABS</option>
+          <option value="nylon">Nylon</option>
+          <option value="nylon_cf">Nylon-CF</option>
+          <option value="alu_6061">Alu 6061</option>
+          <option value="steel_mild">Mild steel</option>
+        </select>
+      </label>
+      <div class="row" style="margin-top:6px">
+        <span>keys</span><span style="color:var(--dim)">+/−  ↑↓←→  R W Space M X</span>
       </div>
     </div>
+
     <div id="controls">
-      <button id="btn-zoom-in" title="Zoom in">Zoom +</button>
-      <button id="btn-zoom-out" title="Zoom out">Zoom −</button>
-      <button id="btn-spin">Auto-rotate: off</button>
-      <button id="btn-wire">Wireframe: off</button>
+      <button id="btn-spin">Auto-rotate</button>
+      <button id="btn-wire">Wireframe</button>
+      <button id="btn-dims">Dimensions</button>
+      <button id="btn-measure">Measure</button>
+      <button id="btn-section">Section</button>
+      <button id="btn-compare">A/B compare</button>
+      <button id="btn-gallery">Gallery</button>
       <button id="btn-reset">Reset view</button>
+      <button id="btn-dl-stl">STL</button>
+      <button id="btn-dl-step">STEP</button>
     </div>
-    <div id="status"><span id="dot"></span><span id="s-text">connecting…</span></div>
+
+    <!-- Section (clipping plane) controls, shown when Section is on. -->
+    <div id="section-ctl" class="card" style="position:fixed;top:64px;right:14px;padding:10px 12px;display:none;min-width:220px">
+      <label class="field">axis
+        <select id="sel-axis"><option>X</option><option>Y</option><option>Z</option></select>
+      </label>
+      <label class="field">offset
+        <input id="rng-clip" type="range" min="-100" max="100" value="0" />
+      </label>
+      <label class="field" style="justify-content:flex-start;gap:8px">
+        <input id="chk-flip" type="checkbox" /> flip
+      </label>
+    </div>
+
+    <div id="validation" class="card collapsed">
+      <div class="head" id="val-head">
+        <h2>Validation</h2>
+        <span id="val-summary" style="color:var(--dim)">click to run</span>
+      </div>
+      <div class="body" id="val-body"></div>
+    </div>
+
+    <div id="status" class="card"><span id="dot"></span><span id="s-text">connecting…</span></div>
     <div id="empty">No model yet — run a build via the Anvil MCP and it will appear here.</div>
+
+    <div id="drawer">
+      <div class="inner card">
+        <button class="close" id="drawer-close">Close</button>
+        <h2 id="drawer-title">Gallery</h2>
+        <div class="grid" id="drawer-grid"></div>
+      </div>
+    </div>
 
     <script type="module">
       import * as THREE from "three";
@@ -77,8 +190,10 @@
       const params = new URLSearchParams(location.search);
       const session = params.get("session");
       const q = session ? `?session=${encodeURIComponent(session)}` : "";
+      const withSession = (qs) => session ? `${qs}${qs.includes("?") ? "&" : "?"}session=${encodeURIComponent(session)}` : qs;
+      const $ = (id) => document.getElementById(id);
 
-      const app = document.getElementById("app");
+      const app = $("app");
       const scene = new THREE.Scene();
       scene.background = new THREE.Color(0x0e0f12);
 
@@ -88,6 +203,7 @@
       const renderer = new THREE.WebGLRenderer({ antialias: true });
       renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
       renderer.setSize(innerWidth, innerHeight);
+      renderer.localClippingEnabled = true;
       app.appendChild(renderer.domElement);
 
       const controls = new OrbitControls(camera, renderer.domElement);
@@ -110,69 +226,149 @@
       grid.position.y = -0.01;
       scene.add(grid);
 
-      const material = new THREE.MeshStandardMaterial({
-        color: 0x9fb4d4, metalness: 0.25, roughness: 0.55, flatShading: false,
+      // Single global clipping plane; toggled on with Section, driven by axis + offset.
+      const clipPlane = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0);
+      let sectionOn = false;
+
+      function newMaterial() {
+        return new THREE.MeshStandardMaterial({
+          color: 0x9fb4d4, metalness: 0.25, roughness: 0.55, flatShading: false,
+          clippingPlanes: [], clipShadows: true, side: THREE.DoubleSide,
+        });
+      }
+      const material = newMaterial();
+      const materialB = new THREE.MeshStandardMaterial({
+        color: 0xf5b955, metalness: 0.2, roughness: 0.6, transparent: true,
+        opacity: 0.55, side: THREE.DoubleSide,
       });
-      let mesh = null;
+
+      let mesh = null;      // primary (live) mesh
+      let meshB = null;     // comparison mesh (A/B)
       let autoSpin = false;
       let wire = false;
+      let radius = 40;      // model radius, drives clip-plane range + fit distance
 
       function fitCamera(geometry) {
         geometry.computeBoundingBox();
         const bb = geometry.boundingBox;
         const size = new THREE.Vector3();
         bb.getSize(size);
-        const center = new THREE.Vector3();
-        bb.getCenter(center);
-        const radius = Math.max(size.x, size.y, size.z) * 0.5 || 40;
-        controls.target.copy(new THREE.Vector3(0, 0, 0));
+        radius = Math.max(size.x, size.y, size.z) * 0.5 || 40;
+        controls.target.set(0, 0, 0);
         const d = radius * 3.2;
         camera.position.set(d, d * 0.8, d);
         camera.near = radius * 0.05;
         camera.far = radius * 40;
         camera.updateProjectionMatrix();
-        return { size, center };
+        return { size };
+      }
+
+      async function loadInto(url, mat, existing) {
+        const res = await fetch(url);
+        if (!res.ok) return { mesh: null, res };
+        const buf = await res.arrayBuffer();
+        const geometry = new STLLoader().parse(buf);
+        geometry.center();
+        geometry.computeVertexNormals();
+        if (existing) { scene.remove(existing); existing.geometry.dispose(); }
+        const m = new THREE.Mesh(geometry, mat);
+        scene.add(m);
+        return { mesh: m, res, geometry };
       }
 
       async function loadModel() {
         try {
-          const res = await fetch(`/model.stl${q}${q ? "&" : "?"}t=${Date.now()}`);
-          if (!res.ok) { document.getElementById("empty").style.display = "flex"; return; }
-          const buf = await res.arrayBuffer();
-          document.getElementById("empty").style.display = "none";
-          const geometry = new STLLoader().parse(buf);
-          geometry.center();
-          geometry.computeVertexNormals();
-
-          if (mesh) { scene.remove(mesh); mesh.geometry.dispose(); }
-          mesh = new THREE.Mesh(geometry, material);
+          const { mesh: m, res, geometry } =
+            await loadInto(withSession(`/model.stl?t=${Date.now()}`), material, mesh);
+          if (!m) { $("empty").style.display = "flex"; return; }
+          $("empty").style.display = "none";
+          mesh = m;
           material.wireframe = wire;
-          scene.add(mesh);
-
           const { size } = fitCamera(geometry);
           const tris = geometry.attributes.position.count / 3;
-          document.getElementById("m-name").textContent = res.headers.get("X-Model-Name") || "model.stl";
-          document.getElementById("m-tris").textContent = tris.toLocaleString();
-          document.getElementById("m-dims").textContent =
+          $("m-name").textContent = res.headers.get("X-Model-Name") || "model.stl";
+          $("m-tris").textContent = tris.toLocaleString();
+          $("m-dims").textContent =
             `${size.x.toFixed(1)} × ${size.y.toFixed(1)} × ${size.z.toFixed(1)}`;
-          document.getElementById("m-time").textContent = new Date().toLocaleTimeString();
+          $("m-time").textContent = new Date().toLocaleTimeString();
+          updateSectionRange();
           flash();
+          refreshInspect();
+          if (!$("validation").classList.contains("collapsed")) refreshValidation();
         } catch (e) {
           console.error(e);
         }
       }
 
+      function material_() { return $("sel-material").value; }
+
+      async function refreshInspect() {
+        try {
+          const r = await fetch(withSession(`/api/inspect?material=${material_()}`));
+          if (!r.ok) return;
+          const d = await r.json();
+          $("m-vol").textContent = `${d.volume_cm3.toFixed(2)} cm³`;
+          $("m-mass").textContent = `${d.mass_g.toFixed(1)} g`;
+          $("m-water").textContent = d.watertight ? "yes" : "no";
+          $("m-water").style.color = d.watertight ? "var(--ok)" : "var(--warn)";
+          $("m-tris").textContent = d.triangles.toLocaleString();
+          $("m-dims").textContent = d.bbox_mm.map((v) => v.toFixed(1)).join(" × ");
+        } catch (e) { console.error(e); }
+      }
+
+      // ── Validation panel ───────────────────────────────────────────────
+      const valPanel = $("validation");
+      $("val-head").onclick = () => {
+        valPanel.classList.toggle("collapsed");
+        if (!valPanel.classList.contains("collapsed")) refreshValidation();
+      };
+      async function refreshValidation() {
+        const body = $("val-body");
+        $("val-summary").textContent = "running…";
+        body.innerHTML = "";
+        try {
+          const r = await fetch(withSession(`/api/validation?material=${material_()}`));
+          if (!r.ok) { $("val-summary").textContent = "no model"; return; }
+          const d = await r.json();
+          $("val-summary").innerHTML =
+            `<span class="pill ${d.passed ? "pass" : "fail"}">${d.passed ? "PASS" : "FAIL"}</span>`;
+          for (const issue of d.issues) {
+            const el = document.createElement("div");
+            el.className = "issue";
+            el.innerHTML =
+              `<span class="sev ${issue.severity}"></span>` +
+              `<span><span class="check">${issue.check}</span> ` +
+              `<span class="msg">${issue.message}</span></span>`;
+            body.appendChild(el);
+          }
+          const keys = Object.keys(d.metrics);
+          if (keys.length) {
+            const mx = document.createElement("div");
+            mx.className = "metrics";
+            for (const k of keys.sort()) {
+              const v = d.metrics[k];
+              mx.insertAdjacentHTML("beforeend",
+                `<span>${k}</span><b>${typeof v === "number" ? v.toFixed(3) : v}</b>`);
+            }
+            body.appendChild(mx);
+          }
+        } catch (e) {
+          $("val-summary").textContent = "error";
+          console.error(e);
+        }
+      }
+
       function flash() {
-        const dot = document.getElementById("dot");
+        const dot = $("dot");
         dot.classList.add("flash");
         setTimeout(() => dot.classList.remove("flash"), 600);
       }
 
-      // Live updates via Server-Sent Events.
+      // ── Live updates via Server-Sent Events ────────────────────────────
       function connect() {
-        const es = new EventSource(`/events${q}`);
-        const dot = document.getElementById("dot");
-        const text = document.getElementById("s-text");
+        const es = new EventSource(withSession(`/events`));
+        const dot = $("dot");
+        const text = $("s-text");
         es.addEventListener("open", () => {
           dot.classList.add("live"); text.textContent = "live · watching for builds";
         });
@@ -182,6 +378,7 @@
         });
       }
 
+      // ── Camera helpers (custom zoom/orbit, kept from the original) ──────
       function zoomBy(factor) {
         const dir = new THREE.Vector3().subVectors(camera.position, controls.target);
         const dist = dir.length();
@@ -190,21 +387,12 @@
         camera.position.copy(controls.target).add(dir);
         controls.update();
       }
-      document.getElementById("btn-zoom-in").onclick = () => zoomBy(0.6);
-      document.getElementById("btn-zoom-out").onclick = () => zoomBy(1.66);
-
-      // Custom wheel/trackpad zoom — strong sensitivity so pinch/two-finger scroll is fast.
       const WHEEL_ZOOM_SENS = 0.05;
-      renderer.domElement.addEventListener(
-        "wheel",
-        (e) => {
-          e.preventDefault();
-          // Clamp per-event delta so a big flick doesn't jump too far, but stay responsive.
-          const d = Math.max(-60, Math.min(60, e.deltaY));
-          zoomBy(Math.exp(d * WHEEL_ZOOM_SENS));
-        },
-        { passive: false },
-      );
+      renderer.domElement.addEventListener("wheel", (e) => {
+        e.preventDefault();
+        const d = Math.max(-60, Math.min(60, e.deltaY));
+        zoomBy(Math.exp(d * WHEEL_ZOOM_SENS));
+      }, { passive: false });
 
       function orbit(dAz, dPol) {
         const off = new THREE.Vector3().subVectors(camera.position, controls.target);
@@ -216,9 +404,197 @@
         controls.update();
       }
 
-      // Keyboard controls: +/- zoom, arrows orbit, R reset, W wireframe, Space auto-rotate.
+      // ── Measure tool (raycast two mesh points, show distance) ──────────
+      const raycaster = new THREE.Raycaster();
+      let measureOn = false;
+      const measurePts = [];
+      let measureLine = null;
+      const tags = [];
+      function makeTag(text, cls) {
+        const el = document.createElement("div");
+        el.className = `tag ${cls || ""}`;
+        el.textContent = text;
+        document.body.appendChild(el);
+        tags.push(el);
+        return el;
+      }
+      function clearMeasure() {
+        measurePts.length = 0;
+        if (measureLine) { scene.remove(measureLine); measureLine.geometry.dispose(); measureLine = null; }
+        for (const t of tags.filter((t) => t.dataset.kind === "measure")) t.remove();
+        tags.length = 0;
+        measureTags.length = 0;
+      }
+      const measureTags = [];
+      renderer.domElement.addEventListener("pointerdown", (e) => {
+        if (!measureOn || !mesh) return;
+        const rect = renderer.domElement.getBoundingClientRect();
+        const ndc = new THREE.Vector2(
+          ((e.clientX - rect.left) / rect.width) * 2 - 1,
+          -((e.clientY - rect.top) / rect.height) * 2 + 1,
+        );
+        raycaster.setFromCamera(ndc, camera);
+        const hit = raycaster.intersectObject(mesh, false)[0];
+        if (!hit) return;
+        if (measurePts.length === 2) clearMeasure();
+        measurePts.push(hit.point.clone());
+        const t = makeTag("•", "");
+        t.dataset.kind = "measure";
+        measureTags.push({ el: t, pos: hit.point.clone() });
+        if (measurePts.length === 2) {
+          const d = measurePts[0].distanceTo(measurePts[1]);
+          const geo = new THREE.BufferGeometry().setFromPoints(measurePts);
+          measureLine = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0x6ea8fe }));
+          scene.add(measureLine);
+          const mid = measurePts[0].clone().add(measurePts[1]).multiplyScalar(0.5);
+          const t2 = makeTag(`${d.toFixed(2)} mm`, "");
+          t2.dataset.kind = "measure";
+          measureTags.push({ el: t2, pos: mid });
+        }
+      });
+
+      // ── Dimensions overlay (X/Y/Z bbox labels) ─────────────────────────
+      let dimsOn = false;
+      const dimTags = [];
+      function buildDims() {
+        for (const t of dimTags) t.el.remove();
+        dimTags.length = 0;
+        if (!mesh || !dimsOn) return;
+        mesh.geometry.computeBoundingBox();
+        const bb = mesh.geometry.boundingBox;
+        const size = new THREE.Vector3(); bb.getSize(size);
+        const specs = [
+          { v: new THREE.Vector3(0, bb.min.y, bb.min.z), t: `X ${size.x.toFixed(1)}` },
+          { v: new THREE.Vector3(bb.min.x, 0, bb.min.z), t: `Y ${size.y.toFixed(1)}` },
+          { v: new THREE.Vector3(bb.min.x, bb.min.y, 0), t: `Z ${size.z.toFixed(1)}` },
+        ];
+        for (const s of specs) {
+          const el = makeTag(s.t, "dim");
+          el.dataset.kind = "dim";
+          dimTags.push({ el, pos: s.v });
+        }
+      }
+      function projectTags(list) {
+        const w = innerWidth, h = innerHeight;
+        for (const { el, pos } of list) {
+          const p = pos.clone().project(camera);
+          if (p.z > 1) { el.style.display = "none"; continue; }
+          el.style.display = "block";
+          el.style.left = `${(p.x * 0.5 + 0.5) * w}px`;
+          el.style.top = `${(-p.y * 0.5 + 0.5) * h}px`;
+        }
+      }
+
+      // ── Section / clipping plane ───────────────────────────────────────
+      function axisVec(axis, flip) {
+        const s = flip ? 1 : -1;
+        if (axis === "X") return new THREE.Vector3(s, 0, 0);
+        if (axis === "Y") return new THREE.Vector3(0, s, 0);
+        return new THREE.Vector3(0, 0, s);
+      }
+      function updateSectionRange() {
+        const rng = $("rng-clip");
+        rng.min = (-radius * 1.2).toFixed(0);
+        rng.max = (radius * 1.2).toFixed(0);
+      }
+      function updateClip() {
+        const axis = $("sel-axis").value;
+        const flip = $("chk-flip").checked;
+        const offset = parseFloat($("rng-clip").value);
+        clipPlane.normal.copy(axisVec(axis, flip));
+        clipPlane.constant = offset;
+        const planes = sectionOn ? [clipPlane] : [];
+        material.clippingPlanes = planes;
+        materialB.clippingPlanes = planes;
+      }
+      ["sel-axis", "rng-clip", "chk-flip"].forEach((id) => $(id).addEventListener("input", updateClip));
+
+      // ── A/B compare + gallery drawer ───────────────────────────────────
+      let compareOn = false;
+      async function toggleCompare() {
+        compareOn = !compareOn;
+        $("btn-compare").classList.toggle("on", compareOn);
+        if (!compareOn) {
+          if (meshB) { scene.remove(meshB); meshB.geometry.dispose(); meshB = null; }
+          return;
+        }
+        if (!session) { openDrawer("Versions need a ?session= param", []); return; }
+        const r = await fetch(withSession(`/api/versions`));
+        const d = await r.json();
+        openDrawer("Load a version to overlay (amber)", d.versions.map((v) => ({
+          title: v.artifact_id,
+          sub: new Date(v.mtime * 1000).toLocaleString(),
+          thumbnail: v.thumbnail,
+          onpick: () => loadCompare(v.stl),
+        })));
+      }
+      async function loadCompare(relPath) {
+        closeDrawer();
+        const { mesh: m } = await loadInto(
+          `/artifact.stl?path=${encodeURIComponent(relPath)}`, materialB, meshB);
+        if (m) meshB = m;
+      }
+
+      async function openGallery() {
+        const r = await fetch(`/api/gallery`);
+        const d = await r.json();
+        openDrawer("Design gallery — click to open a session", d.sessions.map((s) => ({
+          title: s.session,
+          sub: `${s.count} build${s.count === 1 ? "" : "s"}`,
+          thumbnail: s.thumbnail,
+          onpick: () => { location.search = `?session=${encodeURIComponent(s.session)}`; },
+        })));
+      }
+      function openDrawer(title, items) {
+        $("drawer-title").textContent = title;
+        const grid = $("drawer-grid");
+        grid.innerHTML = "";
+        if (!items.length) {
+          grid.innerHTML = `<div style="color:var(--dim)">Nothing to show.</div>`;
+        }
+        for (const it of items) {
+          const tile = document.createElement("div");
+          tile.className = "tile";
+          const img = it.thumbnail
+            ? `<img src="/thumbnail?path=${encodeURIComponent(it.thumbnail)}" alt="" />`
+            : `<div class="noimg">no render</div>`;
+          tile.innerHTML = `${img}<div class="meta"><div class="t">${it.title}</div>` +
+            `<div class="s">${it.sub}</div></div>`;
+          tile.onclick = it.onpick;
+          grid.appendChild(tile);
+        }
+        $("drawer").classList.add("open");
+      }
+      function closeDrawer() { $("drawer").classList.remove("open"); }
+      $("drawer-close").onclick = closeDrawer;
+      $("drawer").addEventListener("click", (e) => { if (e.target.id === "drawer") closeDrawer(); });
+
+      // ── Buttons + keys ─────────────────────────────────────────────────
+      $("btn-spin").onclick = (e) => { autoSpin = !autoSpin; e.target.classList.toggle("on", autoSpin); };
+      $("btn-wire").onclick = (e) => { wire = !wire; material.wireframe = wire; e.target.classList.toggle("on", wire); };
+      $("btn-reset").onclick = () => { if (mesh) fitCamera(mesh.geometry); };
+      $("btn-dims").onclick = (e) => { dimsOn = !dimsOn; e.target.classList.toggle("on", dimsOn); buildDims(); };
+      $("btn-measure").onclick = (e) => {
+        measureOn = !measureOn; e.target.classList.toggle("on", measureOn);
+        controls.enableRotate = !measureOn;
+        if (!measureOn) clearMeasure();
+      };
+      $("btn-section").onclick = (e) => {
+        sectionOn = !sectionOn; e.target.classList.toggle("on", sectionOn);
+        $("section-ctl").style.display = sectionOn ? "block" : "none";
+        updateClip();
+      };
+      $("btn-compare").onclick = toggleCompare;
+      $("btn-gallery").onclick = openGallery;
+      $("btn-dl-stl").onclick = () => { location.href = withSession(`/download/stl`); };
+      $("btn-dl-step").onclick = () => { location.href = withSession(`/download/step`); };
+      $("sel-material").onchange = () => {
+        refreshInspect();
+        if (!valPanel.classList.contains("collapsed")) refreshValidation();
+      };
+
       addEventListener("keydown", (e) => {
-        if (e.target && ["INPUT", "TEXTAREA"].includes(e.target.tagName)) return;
+        if (e.target && ["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName)) return;
         const step = e.shiftKey ? 0.25 : 0.12;
         switch (e.key) {
           case "+": case "=": zoomBy(e.shiftKey ? 0.4 : 0.65); break;
@@ -228,20 +604,15 @@
           case "ArrowUp": orbit(0, -step); break;
           case "ArrowDown": orbit(0, step); break;
           case "r": case "R": if (mesh) fitCamera(mesh.geometry); break;
-          case "w": case "W": document.getElementById("btn-wire").click(); break;
-          case " ": document.getElementById("btn-spin").click(); break;
+          case "w": case "W": $("btn-wire").click(); break;
+          case "m": case "M": $("btn-measure").click(); break;
+          case "x": case "X": $("btn-section").click(); break;
+          case " ": $("btn-spin").click(); break;
+          case "Escape": closeDrawer(); break;
           default: return;
         }
         e.preventDefault();
       });
-
-      document.getElementById("btn-spin").onclick = (e) => {
-        autoSpin = !autoSpin; e.target.textContent = `Auto-rotate: ${autoSpin ? "on" : "off"}`;
-      };
-      document.getElementById("btn-wire").onclick = (e) => {
-        wire = !wire; material.wireframe = wire; e.target.textContent = `Wireframe: ${wire ? "on" : "off"}`;
-      };
-      document.getElementById("btn-reset").onclick = () => { if (mesh) fitCamera(mesh.geometry); };
 
       addEventListener("resize", () => {
         camera.aspect = innerWidth / innerHeight;
@@ -254,6 +625,8 @@
         if (autoSpin && mesh) mesh.rotation.z += 0.004;
         controls.update();
         renderer.render(scene, camera);
+        if (dimsOn) projectTags(dimTags);
+        if (measureTags.length) projectTags(measureTags);
       }
 
       loadModel();

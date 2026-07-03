@@ -170,9 +170,10 @@ class ExportPartTool(Tool):
                 ok=False,
                 text="Nothing to export — build a part first.",
             )
-        step_dest, stl_dest = ctx.toolkit.export(session=ctx.session, artifact=artifact)
+        paths = ctx.toolkit.export(session=ctx.session, artifact=artifact)
+        listed = "\n".join(f"- {p}" for p in paths)
         return ToolResult(
             tool_call_id=call_id,
             ok=True,
-            text=f"Exported:\n- {step_dest}\n- {stl_dest}",
+            text=f"Exported {len(paths)} file(s):\n{listed}",
         )

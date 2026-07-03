@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Anvil · Live 3D Viewer</title>
+    <style>
+      :root {
+        --bg: #0e0f12;
+        --panel: #16181d;
+        --line: #262a31;
+        --ink: #e7e9ee;
+        --dim: #8b909a;
+        --accent: #6ea8fe;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+        font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; overflow: hidden; }
+      #app { position: fixed; inset: 0; }
+      #hud { position: fixed; top: 14px; left: 14px; background: rgba(22,24,29,0.82);
+        border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px;
+        backdrop-filter: blur(8px); min-width: 210px; }
+      #hud h1 { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+        margin: 0 0 8px; color: var(--dim); font-weight: 600; }
+      .row { display: flex; justify-content: space-between; gap: 18px; padding: 2px 0; }
+      .row span:first-child { color: var(--dim); }
+      .row span:last-child { color: var(--ink); }
+      #status { position: fixed; bottom: 14px; left: 14px; display: flex; align-items: center;
+        gap: 8px; color: var(--dim); background: rgba(22,24,29,0.82);
+        border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; }
+      #dot { width: 8px; height: 8px; border-radius: 50%; background: #3a3f48; }
+      #dot.live { background: #4ade80; }
+      #dot.flash { background: var(--accent); }
+      #controls { position: fixed; top: 14px; right: 14px; display: flex; gap: 8px; }
+      button { background: var(--panel); color: var(--ink); border: 1px solid var(--line);
+        border-radius: 8px; padding: 7px 12px; cursor: pointer; font: inherit; }
+      button:hover { border-color: var(--accent); color: var(--accent); }
+      #empty { position: fixed; inset: 0; display: flex; align-items: center;
+        justify-content: center; color: var(--dim); text-align: center; padding: 24px; }
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <div id="hud">
+      <h1>Anvil · Live</h1>
+      <div class="row"><span>model</span><span id="m-name">—</span></div>
+      <div class="row"><span>triangles</span><span id="m-tris">—</span></div>
+      <div class="row"><span>size (mm)</span><span id="m-dims">—</span></div>
+      <div class="row"><span>updated</span><span id="m-time">—</span></div>
+      <div class="row" style="margin-top:8px;border-top:1px solid var(--line);padding-top:8px">
+        <span>keys</span><span style="color:var(--dim)">+ / −  ·  ↑↓←→  ·  R  W  Space</span>
+      </div>
+    </div>
+    <div id="controls">
+      <button id="btn-zoom-in" title="Zoom in">Zoom +</button>
+      <button id="btn-zoom-out" title="Zoom out">Zoom −</button>
+      <button id="btn-spin">Auto-rotate: off</button>
+      <button id="btn-wire">Wireframe: off</button>
+      <button id="btn-reset">Reset view</button>
+    </div>
+    <div id="status"><span id="dot"></span><span id="s-text">connecting…</span></div>
+    <div id="empty">No model yet — run a build via the Anvil MCP and it will appear here.</div>
+
+    <script type="module">
+      import * as THREE from "three";
+      import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+      import { STLLoader } from "three/addons/loaders/STLLoader.js";
+
+      const params = new URLSearchParams(location.search);
+      const session = params.get("session");
+      const q = session ? `?session=${encodeURIComponent(session)}` : "";
+
+      const app = document.getElementById("app");
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0e0f12);
+
+      const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 5000);
+      camera.position.set(120, 90, 120);
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+      renderer.setSize(innerWidth, innerHeight);
+      app.appendChild(renderer.domElement);
+
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.08;
+      // Handle zoom ourselves for full speed control (OrbitControls' trackpad zoom is weak).
+      controls.enableZoom = false;
+      controls.minDistance = 1;
+      controls.maxDistance = 4000;
+
+      scene.add(new THREE.HemisphereLight(0xffffff, 0x20242c, 1.1));
+      const key = new THREE.DirectionalLight(0xffffff, 1.4);
+      key.position.set(1, 1.5, 1);
+      scene.add(key);
+      const rim = new THREE.DirectionalLight(0x6ea8fe, 0.6);
+      rim.position.set(-1, 0.5, -1);
+      scene.add(rim);
+
+      const grid = new THREE.GridHelper(400, 40, 0x2a2f38, 0x1b1f26);
+      grid.position.y = -0.01;
+      scene.add(grid);
+
+      const material = new THREE.MeshStandardMaterial({
+        color: 0x9fb4d4, metalness: 0.25, roughness: 0.55, flatShading: false,
+      });
+      let mesh = null;
+      let autoSpin = false;
+      let wire = false;
+
+      function fitCamera(geometry) {
+        geometry.computeBoundingBox();
+        const bb = geometry.boundingBox;
+        const size = new THREE.Vector3();
+        bb.getSize(size);
+        const center = new THREE.Vector3();
+        bb.getCenter(center);
+        const radius = Math.max(size.x, size.y, size.z) * 0.5 || 40;
+        controls.target.copy(new THREE.Vector3(0, 0, 0));
+        const d = radius * 3.2;
+        camera.position.set(d, d * 0.8, d);
+        camera.near = radius * 0.05;
+        camera.far = radius * 40;
+        camera.updateProjectionMatrix();
+        return { size, center };
+      }
+
+      async function loadModel() {
+        try {
+          const res = await fetch(`/model.stl${q}${q ? "&" : "?"}t=${Date.now()}`);
+          if (!res.ok) { document.getElementById("empty").style.display = "flex"; return; }
+          const buf = await res.arrayBuffer();
+          document.getElementById("empty").style.display = "none";
+          const geometry = new STLLoader().parse(buf);
+          geometry.center();
+          geometry.computeVertexNormals();
+
+          if (mesh) { scene.remove(mesh); mesh.geometry.dispose(); }
+          mesh = new THREE.Mesh(geometry, material);
+          material.wireframe = wire;
+          scene.add(mesh);
+
+          const { size } = fitCamera(geometry);
+          const tris = geometry.attributes.position.count / 3;
+          document.getElementById("m-name").textContent = res.headers.get("X-Model-Name") || "model.stl";
+          document.getElementById("m-tris").textContent = tris.toLocaleString();
+          document.getElementById("m-dims").textContent =
+            `${size.x.toFixed(1)} × ${size.y.toFixed(1)} × ${size.z.toFixed(1)}`;
+          document.getElementById("m-time").textContent = new Date().toLocaleTimeString();
+          flash();
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      function flash() {
+        const dot = document.getElementById("dot");
+        dot.classList.add("flash");
+        setTimeout(() => dot.classList.remove("flash"), 600);
+      }
+
+      // Live updates via Server-Sent Events.
+      function connect() {
+        const es = new EventSource(`/events${q}`);
+        const dot = document.getElementById("dot");
+        const text = document.getElementById("s-text");
+        es.addEventListener("open", () => {
+          dot.classList.add("live"); text.textContent = "live · watching for builds";
+        });
+        es.addEventListener("model", () => loadModel());
+        es.addEventListener("error", () => {
+          dot.classList.remove("live"); text.textContent = "reconnecting…";
+        });
+      }
+
+      function zoomBy(factor) {
+        const dir = new THREE.Vector3().subVectors(camera.position, controls.target);
+        const dist = dir.length();
+        const next = Math.min(controls.maxDistance, Math.max(controls.minDistance, dist * factor));
+        dir.setLength(next);
+        camera.position.copy(controls.target).add(dir);
+        controls.update();
+      }
+      document.getElementById("btn-zoom-in").onclick = () => zoomBy(0.6);
+      document.getElementById("btn-zoom-out").onclick = () => zoomBy(1.66);
+
+      // Custom wheel/trackpad zoom — strong sensitivity so pinch/two-finger scroll is fast.
+      const WHEEL_ZOOM_SENS = 0.05;
+      renderer.domElement.addEventListener(
+        "wheel",
+        (e) => {
+          e.preventDefault();
+          // Clamp per-event delta so a big flick doesn't jump too far, but stay responsive.
+          const d = Math.max(-60, Math.min(60, e.deltaY));
+          zoomBy(Math.exp(d * WHEEL_ZOOM_SENS));
+        },
+        { passive: false },
+      );
+
+      function orbit(dAz, dPol) {
+        const off = new THREE.Vector3().subVectors(camera.position, controls.target);
+        const sph = new THREE.Spherical().setFromVector3(off);
+        sph.theta += dAz;
+        sph.phi = Math.max(0.02, Math.min(Math.PI - 0.02, sph.phi + dPol));
+        off.setFromSpherical(sph);
+        camera.position.copy(controls.target).add(off);
+        controls.update();
+      }
+
+      // Keyboard controls: +/- zoom, arrows orbit, R reset, W wireframe, Space auto-rotate.
+      addEventListener("keydown", (e) => {
+        if (e.target && ["INPUT", "TEXTAREA"].includes(e.target.tagName)) return;
+        const step = e.shiftKey ? 0.25 : 0.12;
+        switch (e.key) {
+          case "+": case "=": zoomBy(e.shiftKey ? 0.4 : 0.65); break;
+          case "-": case "_": zoomBy(e.shiftKey ? 2.5 : 1.55); break;
+          case "ArrowLeft": orbit(-step, 0); break;
+          case "ArrowRight": orbit(step, 0); break;
+          case "ArrowUp": orbit(0, -step); break;
+          case "ArrowDown": orbit(0, step); break;
+          case "r": case "R": if (mesh) fitCamera(mesh.geometry); break;
+          case "w": case "W": document.getElementById("btn-wire").click(); break;
+          case " ": document.getElementById("btn-spin").click(); break;
+          default: return;
+        }
+        e.preventDefault();
+      });
+
+      document.getElementById("btn-spin").onclick = (e) => {
+        autoSpin = !autoSpin; e.target.textContent = `Auto-rotate: ${autoSpin ? "on" : "off"}`;
+      };
+      document.getElementById("btn-wire").onclick = (e) => {
+        wire = !wire; material.wireframe = wire; e.target.textContent = `Wireframe: ${wire ? "on" : "off"}`;
+      };
+      document.getElementById("btn-reset").onclick = () => { if (mesh) fitCamera(mesh.geometry); };
+
+      addEventListener("resize", () => {
+        camera.aspect = innerWidth / innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(innerWidth, innerHeight);
+      });
+
+      function animate() {
+        requestAnimationFrame(animate);
+        if (autoSpin && mesh) mesh.rotation.z += 0.004;
+        controls.update();
+        renderer.render(scene, camera);
+      }
+
+      loadModel();
+      connect();
+      animate();
+    </script>
+  </body>
+</html>

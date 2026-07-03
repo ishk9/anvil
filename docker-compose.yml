@@ -1,0 +1,68 @@
+services:
+  # Interactive design REPL: `docker compose run --rm cli design`
+  cli:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: anvil:latest
+    env_file: .env
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./data:/data
+    command: ["anvil", "design"]
+
+  # MCP server over stdio: launched by an MCP client (see docs/02-MCP.md).
+  # `docker compose run --rm -T mcp` also works for a raw stdio session.
+  mcp:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: anvil:latest
+    env_file: .env
+    stdin_open: true
+    tty: false
+    # Real memory containment for the CAD sandbox (cgroup). Keep below the Docker VM's
+    # total; RLIMIT_AS is disabled (MECHFORGE_CAD_MEMORY_LIMIT_MB=0) to avoid false OOM.
+    mem_limit: 6g
+    memswap_limit: 6g
+    volumes:
+      - ./data:/data
+    command: ["anvil", "mcp"]
+
+  # Live 3D viewer: `docker compose up viewer` then open http://localhost:8091
+  # Auto-reloads the newest STL in ./data/workspace as the MCP tools build parts.
+  viewer:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: anvil:latest
+    env_file: .env
+    ports:
+      - "8091:8000"
+    volumes:
+      - ./data:/data
+    command: ["anvil", "viewer", "--host", "0.0.0.0", "--port", "8000"]
+
+  # HTTP API: `docker compose up api`
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: anvil:latest
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data
+    command: ["anvil", "serve", "--host", "0.0.0.0", "--port", "8000"]
+
+  # Quality gate: `docker compose run --rm checks`
+  checks:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: anvil:latest
+    volumes:
+      - ./data:/data
+    command: ["bash", "-lc", "ruff check src tests && mypy && pytest -q"]

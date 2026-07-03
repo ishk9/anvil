@@ -1,0 +1,76 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "anvil"
+version = "0.1.0"
+description = "AI mechanical design agent for parametric 3D parts (drones, mounts, brackets)."
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+license = { text = "MIT" }
+authors = [{ name = "Ishaan Khullar" }]
+
+dependencies = [
+    "build123d>=0.7",
+    "trimesh>=4.4",
+    "numpy>=1.26",
+    "matplotlib>=3.9",
+    "anthropic>=0.39",
+    "openai>=1.51",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.5",
+    "dependency-injector>=4.42",
+    "typer>=0.12",
+    "rich>=13.8",
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "structlog>=24.4",
+    "mcp>=1.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+    "mypy>=1.11",
+]
+
+[project.scripts]
+anvil = "interfaces.cli.main:app"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+py-modules = ["container", "logging_setup"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+interfaces = ["viewer/index.html"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "UP", "B", "SIM", "RUF"]
+ignore = ["B008"]  # typer/fastapi use call-in-default deliberately
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+ignore_missing_imports = true
+mypy_path = "src"
+files = ["src", "tests"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+markers = [
+    "integration: tests that need the full CAD stack (build123d/OpenCASCADE)",
+]
